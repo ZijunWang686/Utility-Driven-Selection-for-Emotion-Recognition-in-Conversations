@@ -1,48 +1,10 @@
 # MELD 实验结果记录
 
-指标以百分比表示。开发和调参使用 Dev，Test 留待方案固定后的最终评估。未完成的实验不填写分数。
+MELD Dev（1,109 条），数值为百分比。类别 Acc 表示该类别的 Recall；Overall 的 wF1 和 mF1 分别为 Weighted-F1 和 Macro-F1。Test 尚未评估。
 
-| 实验 | 数据 | 输入 | Accuracy | Weighted-F1 | Macro-F1 | 状态 |
-| --- | --- | --- | ---: | ---: | ---: | --- |
-| 纯文本 Zero-shot（七选一约束） | MELD Dev（1,109） | T | 59.15 | 59.00 | 47.60 | 已完成 |
-| 纯文本 LoRA | MELD Dev（1,109） | T | 70.60 | 69.66 | 57.61 | 已完成 |
-| 固定全模态分类 | Dev | T+A+V | — | — | — | 待完成 |
-| 监督式模态选择 V1 | Dev | 动态选择 | — | — | — | 待完成 |
-| 格式奖励 GRPO | Dev | 动态选择 | — | — | — | 待完成 |
-| 任务奖励 GRPO V2 | Dev | 动态选择 | — | — | — | 待完成 |
+| Methods | Neutral Acc | Neutral F1 | Surprise Acc | Surprise F1 | Fear Acc | Fear F1 | Sadness Acc | Sadness F1 | Joy Acc | Joy F1 | Disgust Acc | Disgust F1 | Anger Acc | Anger F1 | Overall Acc | Overall wF1 | Overall mF1 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Qwen3-8B Zero-shot (T) | 71.49 | 71.79 | 72.67 | 50.70 | 30.00 | 33.33 | 44.14 | 47.57 | 44.17 | 51.61 | 13.64 | 22.22 | 49.02 | 55.97 | 59.15 | 59.00 | 47.60 |
+| Qwen3-8B LoRA (T) | 87.45 | 81.23 | 69.33 | 66.67 | 22.50 | 31.03 | 46.85 | 55.61 | 64.42 | 66.04 | 40.91 | 36.73 | 60.78 | 65.96 | 70.60 | 69.66 | 57.61 |
 
-## 纯文本 Zero-shot：逐类别结果
-
-| 类别 | 类别 Acc / Recall | F1 | Precision | Support |
-| --- | ---: | ---: | ---: | ---: |
-| Neutral | 71.49 | 71.79 | 72.10 | 470 |
-| Surprise | 72.67 | 50.70 | 38.93 | 150 |
-| Fear | 30.00 | 33.33 | 37.50 | 40 |
-| Sadness | 44.14 | 47.57 | 51.58 | 111 |
-| Joy | 44.17 | 51.61 | 62.07 | 163 |
-| Disgust | 13.64 | 22.22 | 60.00 | 22 |
-| Anger | 49.02 | 55.97 | 65.22 | 153 |
-| **Overall** | **59.15** | **59.00（Weighted-F1）** | — | **1,109** |
-
-类别 Acc 定义为该真实类别中预测正确的比例，与类别 Recall 相同；Overall Acc 是全样本准确率，Overall F1 使用 Weighted-F1。Macro-F1 为 **47.60**。
-
-2026-10-28 使用 `Qwen/Qwen3-8B`、BF16 和单卡 L40S；Prompt A 输入当前话语、说话人及最多 12 条历史话语，`enable_thinking=False`、`do_sample=False`、`max_new_tokens=16`。使用 token 级约束从七个完整标签中选择。
-
-无效输出 **0/1,109**，生成错误 0，达到输出长度上限 0；GPU 峰值 allocated 为 **15.34 GiB**，平均约 **13.47 条/秒**。原始自由生成结果已作废，不计入本表。音视频逐条映射与完整性核查尚未完成。
-
-## 纯文本 LoRA：MELD Dev
-
-使用 Qwen3-8B、BF16 LoRA、纯文本输入，按 Dev Weighted-F1 选择检查点 `checkpoint-1875`。Accuracy **70.60%**、Weighted-F1 **69.66%**、Macro-F1 **57.61%**；无效输出 0。Test 尚未评估。
-
-| 类别 | 类别 Acc / Recall | F1 | Precision | Support |
-| --- | ---: | ---: | ---: | ---: |
-| Neutral | 87.45 | 81.23 | 75.83 | 470 |
-| Surprise | 69.33 | 66.67 | 64.20 | 150 |
-| Fear | 22.50 | 31.03 | 50.00 | 40 |
-| Sadness | 46.85 | 55.61 | 68.42 | 111 |
-| Joy | 64.42 | 66.04 | 67.74 | 163 |
-| Disgust | 40.91 | 36.73 | 33.33 | 22 |
-| Anger | 60.78 | 65.96 | 72.09 | 153 |
-| **Overall** | **70.60** | **69.66（Weighted-F1）** | — | **1,109** |
-
-与同一 Dev 集上的七选一 Zero-shot 对照，LoRA 的 Disgust F1 从 22.22 提升至 36.73，Fear F1 从 33.33 降至 31.03。少数类支持量较小，变化仍需在后续实验中观察。
+在同一 MELD Dev 集上，纯文本 LoRA 相比 Zero-shot 的 Accuracy、Weighted-F1 和 Macro-F1 分别提高 11.45、10.66 和 10.01 个百分点；Disgust F1 从 22.22 提高到 36.73，Fear F1 从 33.33 降至 31.03。整体上 LoRA 为后续多模态实验提供了较强的纯文本基线，少数类的变化仍需结合后续实验观察。
