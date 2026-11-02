@@ -1,0 +1,8 @@
+You are given a few frames sampled in chronological order from a short MELD video clip.
+The target speaker is: {speaker}
+
+First decide whether you can identify the target speaker in the frames. A name alone is not evidence of a person's identity. If the person is not visible or you cannot reliably identify them, do not guess or describe a different person.
+
+If identifiable, briefly describe only their directly visible facial expression, pose and gestures. Do not infer emotion, intention, dialogue, or movement that cannot be supported by the sampled frames. Keep the description under 40 words.
+
+Return only a JSON object with exactly these keys: "target_status" and "description". Set target_status to "visible", "not_visible", or "uncertain". Set description to an empty string when not_visible or uncertain.

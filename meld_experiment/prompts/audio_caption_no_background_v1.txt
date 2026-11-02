@@ -1,0 +1,5 @@
+Describe only the target speaker's audible vocal characteristics. Ignore background laughter (including laugh tracks and audience laughter), audience noise, and music; do not attribute these sounds to the speaker. Mention laughter only if the target speaker can clearly be heard laughing. If the source is uncertain, do not guess.
+
+Report concrete cues when audible: pitch level or pitch movement, speaking rate, relative volume, pauses or hesitations, voice quality (such as breathy, tense, trembling, or sobbing), and intonation. Report only what can be heard; omit uncertain or inaudible details. Do not transcribe speech.
+
+Do not infer or name an emotion, such as angry, sad, or happy. Describe acoustic evidence only. Keep the description under 60 words.

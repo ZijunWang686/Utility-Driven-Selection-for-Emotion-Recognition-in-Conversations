@@ -1,0 +1,6 @@
+# Install a server CUDA-compatible PyTorch build separately.
+transformers>=4.51.0,<5
+accelerate>=1.6.0,<2
+scikit-learn>=1.6.1,<2
+pandas>=2,<3
+safetensors>=0.4.3

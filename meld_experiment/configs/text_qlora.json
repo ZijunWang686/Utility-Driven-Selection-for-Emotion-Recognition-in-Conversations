@@ -1,0 +1,13 @@
+{
+  "model_name": "Qwen/Qwen2.5-3B-Instruct",
+  "seed": 42,
+  "max_length": 1536,
+  "max_new_tokens": 8,
+  "use_4bit": true,
+  "lora_r": 16,
+  "lora_alpha": 32,
+  "lora_dropout": 0.05,
+  "learning_rate": 0.0002,
+  "epochs": 3,
+  "gradient_accumulation_steps": 16
+}

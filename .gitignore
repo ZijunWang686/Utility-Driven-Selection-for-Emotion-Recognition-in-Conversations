@@ -1,0 +1,36 @@
+# Local environments and editor files
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.DS_Store
+.vscode/
+.idea/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+id_rsa*
+id_ed25519*
+
+# Datasets and generated experiment artifacts (at any level)
+data/
+runs/
+logs/
+reports/
+checkpoints/
+models/
+*.log
+*.part
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.tar
+*.tar.gz
+*.tgz
+*.zip
+*.mp4
+*.wav
+*.mp3

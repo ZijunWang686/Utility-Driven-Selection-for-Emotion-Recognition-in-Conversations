@@ -1,0 +1,7 @@
+Describe the target speaker's audible vocal characteristics, including tone, pitch, speaking rate, loudness, pauses, and non-verbal sounds such as laughter or sighs.
+
+Focus only on observable acoustic evidence.
+Do not infer emotions or transcribe speech.
+Do not invent details.
+
+Keep the description under 40 words.
