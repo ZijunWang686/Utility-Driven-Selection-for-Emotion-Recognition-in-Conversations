@@ -15,9 +15,6 @@
 | Qwen3-8B 纯文本 LoRA | T | 69.16 | 68.37 | 54.37 |
 | Qwen2.5-Omni-7B LoRA | T+A+V（原始音视频） | 68.05 | 68.61 | **56.66** |
 
-
-普通共享模型的四行使用同一个 `multimodal_lora_v1/checkpoint-1875`，每组均完成 2,610 条预测，无效预测均为 0。该模型使用 T 时 Weighted-F1 最高（69.21），比同模型 T+A+V 高 0.69 个百分点。固定 T+A+V 时，普通训练的 Weighted-F1 / Macro-F1 为 68.52 / 55.00，类别加权为 68.09 / 54.51。原始指标保存在服务器 `meld_experiment/runs/shared_plain_test_v1/` 各组合的 `metrics.json`。
-
 Omni 的六次 Dev 评估和检查点选择见[附录 C](#omni-checkpoints)。类别加权共享多模态 LoRA（固定主教师）的 Test 结果见[附录 A 的类别加权 Test 小节](#appendix-a-weighted-test)。
 
 纯文本 LoRA 与 Omni 均完成全部 2,610 条 Test 推理，无效预测均为 0。
