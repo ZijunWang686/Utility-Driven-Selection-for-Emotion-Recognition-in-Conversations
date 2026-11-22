@@ -15,9 +15,9 @@
 | Qwen3-8B 纯文本 LoRA | T | 69.16 | 68.37 | 54.37 |
 | Qwen2.5-Omni-7B LoRA | T+A+V（原始音视频） | 68.05 | 68.61 | **56.66** |
 
-在 MELD Test 上，普通共享模型仅输入 T 时三项整体指标均最高，Weighted-F1 为 69.21，比 T+V 高 0.10 个百分点。四组合及逐类结果见[附录 D](#plain-test)。
+在 MELD Test 上，普通共享模型仅输入 T 时三项整体指标均最高，Weighted-F1 为 69.21，比 T+V 高 0.10 个百分点。四组合及逐类结果见[附录 B](#plain-test)。
 
-Omni 的六次 Dev 评估和检查点选择见[附录 C](#omni-checkpoints)。类别加权共享多模态 LoRA（固定主教师）的 Test 结果见[附录 A 的类别加权 Test 小节](#appendix-a-weighted-test)。
+Omni 的六次 Dev 评估和检查点选择见[附录 C](#omni-checkpoints)。类别加权共享多模态 LoRA（固定主教师）的 Test 结果见[附录 B 的类别加权 Test 小节](#appendix-a-weighted-test)。
 
 纯文本 LoRA 与 Omni 均完成全部 2,610 条 Test 推理，无效预测均为 0。
 
@@ -37,7 +37,7 @@ Omni 的六次 Dev 评估和检查点选择见[附录 C](#omni-checkpoints)。�
 | disgust | 68 | 38.46 / 29.41 / 33.33 | 36.89 / 55.88 / 44.44 |
 | anger | 345 | 62.19 / 51.01 / 56.05 | 60.98 / 57.97 / 59.44 |
 
-类别加权共享多模态 LoRA（固定主教师）的逐类别结果见[附录 A 的类别加权 Test 小节](#appendix-a-weighted-test)。
+类别加权共享多模态 LoRA（固定主教师）的逐类别结果见[附录 B 的类别加权 Test 小节](#appendix-a-weighted-test)。
 
 ## 附录 A：Dev 结果摘要与研究进展（历史留档）
 
@@ -83,7 +83,7 @@ Omni 的六次 Dev 评估和检查点选择见[附录 C](#omni-checkpoints)。�
 | 类别加权 | 68.93 | **58.19** | **42.31** | 32.35 |
 | 过采样 | 67.13 | 55.92 | 40.00 | 31.75 |
 
-类别加权相对普通训练提高 Macro-F1 0.46、Disgust F1 4.81 个百分点，Weighted-F1 降低 0.25 个百分点。后续冻结教师实际采用类别加权 checkpoint-1875，普通训练保留为对照。普通共享模型四组合 Test 结果见附录 D，本表记录 Dev 对照；不能将不同教师的结果混用。
+类别加权相对普通训练提高 Macro-F1 0.46、Disgust F1 4.81 个百分点，Weighted-F1 降低 0.25 个百分点。后续冻结教师实际采用类别加权 checkpoint-1875，普通训练保留为对照。普通共享模型四组合 Test 结果见附录 B，本表记录 Dev 对照；不能将不同教师的结果混用。
 
 ### 4. 模态选择的研究进展
 
@@ -139,6 +139,31 @@ MELD Dev，1,109 条；Qwen3-8B BF16 LoRA，seed 42，训练 3 epochs，Modality
 | sadness | 111 | 65.33 / 44.14 / 52.69 | 67.11 / 45.95 / 54.55 | 67.12 / 44.14 / 53.26 | 70.00 / 44.14 / 54.14 |
 | disgust | 22 | 36.00 / 40.91 / 38.30 | 37.50 / 40.91 / 39.13 | 34.62 / 40.91 / 37.50 | 34.62 / 40.91 / 37.50 |
 | fear | 40 | 47.62 / 25.00 / 32.79 | 47.62 / 25.00 / 32.79 | 50.00 / 25.00 / 33.33 | 50.00 / 25.00 / 33.33 |
+
+<a id="plain-test"></a>
+
+### 普通共享模型四种输入组合的 MELD Test 结果
+
+| 模型 | 输入 | Accuracy | Weighted-F1 | Macro-F1 |
+| --- | --- | ---: | ---: | ---: |
+| Qwen3-8B 多模态 LoRA（Modality Dropout）| T | **70.08** | **69.21** | 55.62 |
+| Qwen3-8B 多模态 LoRA（Modality Dropout） | T+A | 69.23 | 68.45 | 54.63 |
+| Qwen3-8B 多模态 LoRA（Modality Dropout）| T+V | 69.92 | 69.11 | 55.09 |
+| Qwen3-8B 多模态 LoRA（Modality Dropout） | T+A+V | 69.23 | 68.52 | 55.00 |
+
+普通共享模型的四行使用同一个 `multimodal_lora_v1/checkpoint-1875`，每组均完成 2,610 条预测，无效预测均为 0。该模型使用 T 时 Weighted-F1 最高（69.21），比同模型 T+A+V 高 0.69 个百分点。固定 T+A+V 时，普通训练的 Weighted-F1 / Macro-F1 为 68.52 / 55.00，类别加权为 68.09 / 54.51。原始指标保存在服务器 `meld_experiment/runs/shared_plain_test_v1/` 各组合的 `metrics.json`。
+
+**普通共享模型各输入组合的 Test F1**
+
+| 情绪 | 样本数 | T | T+A | T+V | T+A+V |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| neutral | 1256 | 81.69 | 81.19 | 81.76 | 81.03 |
+| surprise | 281 | 60.00 | 60.17 | 59.50 | 59.17 |
+| fear | 50 | 40.00 | 38.20 | 38.10 | 40.91 |
+| sadness | 208 | 47.75 | 46.20 | 47.46 | 46.15 |
+| joy | 402 | 66.42 | 65.68 | 66.42 | 65.84 |
+| disgust | 68 | 35.09 | 34.48 | 33.90 | 33.90 |
+| anger | 345 | 58.40 | 56.51 | 58.49 | 57.99 |
 
 ### 类别不平衡对照：类别加权
 
@@ -401,28 +426,3 @@ Train 的错误为损坏片段 `dia125_utt3`；Test 的 `dia38_utt4` 和 `dia220
 Test 已完成全部 2,610 条，无效预测 0 条。Accuracy 为 **68.05**，Weighted-F1 为 **68.61**，Macro-F1 为 **56.66**。第 349 条长视频触发显存溢出后，保留前 348 条预测，从该样本使用同一检查点续跑，音视频按编码器原有注意力窗口分组计算。
 
 服务器结果目录为 `meld_experiment/omni_qwen3_protocol/runs/weighted_ep3/`，其中 `checkpoint_results.json` 汇总六次 Dev 验证，`best.json` 记录检查点选择，`test/metrics.json` 保存完整精度指标与混淆矩阵，`test/predictions.jsonl` 保存逐样本结果。
-
-<a id="plain-test"></a>
-
-## 附录 D　普通共享模型四种输入组合的 MELD Test 结果
-
-| 模型 | 输入 | Accuracy | Weighted-F1 | Macro-F1 |
-| --- | --- | ---: | ---: | ---: |
-| Qwen3-8B 多模态 LoRA（Modality Dropout）| T | **70.08** | **69.21** | 55.62 |
-| Qwen3-8B 多模态 LoRA（Modality Dropout） | T+A | 69.23 | 68.45 | 54.63 |
-| Qwen3-8B 多模态 LoRA（Modality Dropout）| T+V | 69.92 | 69.11 | 55.09 |
-| Qwen3-8B 多模态 LoRA（Modality Dropout） | T+A+V | 69.23 | 68.52 | 55.00 |
-
-普通共享模型的四行使用同一个 `multimodal_lora_v1/checkpoint-1875`，每组均完成 2,610 条预测，无效预测均为 0。该模型使用 T 时 Weighted-F1 最高（69.21），比同模型 T+A+V 高 0.69 个百分点。固定 T+A+V 时，普通训练的 Weighted-F1 / Macro-F1 为 68.52 / 55.00，类别加权为 68.09 / 54.51。原始指标保存在服务器 `meld_experiment/runs/shared_plain_test_v1/` 各组合的 `metrics.json`。
-
-**普通共享模型各输入组合的 Test F1**
-
-| 情绪 | 样本数 | T | T+A | T+V | T+A+V |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| neutral | 1256 | 81.69 | 81.19 | 81.76 | 81.03 |
-| surprise | 281 | 60.00 | 60.17 | 59.50 | 59.17 |
-| fear | 50 | 40.00 | 38.20 | 38.10 | 40.91 |
-| sadness | 208 | 47.75 | 46.20 | 47.46 | 46.15 |
-| joy | 402 | 66.42 | 65.68 | 66.42 | 65.84 |
-| disgust | 68 | 35.09 | 34.48 | 33.90 | 33.90 |
-| anger | 345 | 58.40 | 56.51 | 58.49 | 57.99 |
