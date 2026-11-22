@@ -14,10 +14,7 @@
 | --- | --- | ---: | ---: | ---: |
 | Qwen3-8B 纯文本 LoRA | T | 69.16 | 68.37 | 54.37 |
 | Qwen2.5-Omni-7B LoRA | T+A+V（原始音视频） | 68.05 | 68.61 | **56.66** |
-| Qwen3-8B 多模态 LoRA（Modality Dropout）| T | **70.08** | **69.21** | 55.62 |
-| Qwen3-8B 多模态 LoRA（Modality Dropout） | T+A | 69.23 | 68.45 | 54.63 |
-| Qwen3-8B 多模态 LoRA（Modality Dropout）| T+V | 69.92 | 69.11 | 55.09 |
-| Qwen3-8B 多模态 LoRA（Modality Dropout） | T+A+V | 69.23 | 68.52 | 55.00 |
+
 
 普通共享模型的四行使用同一个 `multimodal_lora_v1/checkpoint-1875`，每组均完成 2,610 条预测，无效预测均为 0。该模型使用 T 时 Weighted-F1 最高（69.21），比同模型 T+A+V 高 0.69 个百分点。固定 T+A+V 时，普通训练的 Weighted-F1 / Macro-F1 为 68.52 / 55.00，类别加权为 68.09 / 54.51。原始指标保存在服务器 `meld_experiment/runs/shared_plain_test_v1/` 各组合的 `metrics.json`。
 
