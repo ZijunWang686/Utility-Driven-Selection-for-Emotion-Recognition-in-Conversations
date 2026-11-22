@@ -2,7 +2,7 @@
 
 ## 1. 评测口径
 
-- 主结果：MELD Test，共 2,610 条；更新日期：2026-11-21。
+- 主结果：MELD Test，共 2,610 条；更新日期：2026-11-22。
 - 指标：Accuracy、Weighted-F1（主指标）、Macro-F1，均以百分比表示。
 - T 为当前话语及历史对话等文本输入；Qwen3-8B 的 A、V 为音频、视频生成的文字描述，Qwen2.5-Omni-7B 直接接收音频和视频。
 - 推理使用七标签约束贪心解码；Dev 用于选择检查点，Test 用于评测已固定的模型。
@@ -13,7 +13,13 @@
 | 模型 | 输入 | Accuracy | Weighted-F1 | Macro-F1 |
 | --- | --- | ---: | ---: | ---: |
 | Qwen3-8B 纯文本 LoRA | T | 69.16 | 68.37 | 54.37 |
-| Qwen2.5-Omni-7B LoRA | T+A+V（原始音视频） | 68.05 | **68.61** | 56.66 |
+| Qwen2.5-Omni-7B LoRA | T+A+V（原始音视频） | 68.05 | 68.61 | **56.66** |
+| Qwen3-8B 多模态 LoRA（Modality Dropout）| T | **70.08** | **69.21** | 55.62 |
+| Qwen3-8B 多模态 LoRA（Modality Dropout） | T+A | 69.23 | 68.45 | 54.63 |
+| Qwen3-8B 多模态 LoRA（Modality Dropout）| T+V | 69.92 | 69.11 | 55.09 |
+| Qwen3-8B 多模态 LoRA（Modality Dropout） | T+A+V | 69.23 | 68.52 | 55.00 |
+
+普通共享模型的四行使用同一个 `multimodal_lora_v1/checkpoint-1875`，每组均完成 2,610 条预测，无效预测均为 0。该模型使用 T 时 Weighted-F1 最高（69.21），比同模型 T+A+V 高 0.69 个百分点。固定 T+A+V 时，普通训练的 Weighted-F1 / Macro-F1 为 68.52 / 55.00，类别加权为 68.09 / 54.51。原始指标保存在服务器 `meld_experiment/runs/shared_plain_test_v1/` 各组合的 `metrics.json`。
 
 Omni 的六次 Dev 评估和检查点选择见[附录 C](#omni-checkpoints)。类别加权共享多模态 LoRA（固定主教师）的 Test 结果见[附录 A 的类别加权 Test 小节](#appendix-a-weighted-test)。
 
@@ -34,6 +40,18 @@ Omni 的六次 Dev 评估和检查点选择见[附录 C](#omni-checkpoints)。�
 | joy | 402 | 66.67 / 66.67 / 66.67 | 60.92 / 72.14 / 66.06 |
 | disgust | 68 | 38.46 / 29.41 / 33.33 | 36.89 / 55.88 / 44.44 |
 | anger | 345 | 62.19 / 51.01 / 56.05 | 60.98 / 57.97 / 59.44 |
+
+**普通共享模型各输入组合的 Test F1**
+
+| 情绪 | 样本数 | T | T+A | T+V | T+A+V |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| neutral | 1256 | 81.69 | 81.19 | 81.76 | 81.03 |
+| surprise | 281 | 60.00 | 60.17 | 59.50 | 59.17 |
+| fear | 50 | 40.00 | 38.20 | 38.10 | 40.91 |
+| sadness | 208 | 47.75 | 46.20 | 47.46 | 46.15 |
+| joy | 402 | 66.42 | 65.68 | 66.42 | 65.84 |
+| disgust | 68 | 35.09 | 34.48 | 33.90 | 33.90 |
+| anger | 345 | 58.40 | 56.51 | 58.49 | 57.99 |
 
 类别加权共享多模态 LoRA（固定主教师）的逐类别结果见[附录 A 的类别加权 Test 小节](#appendix-a-weighted-test)。
 
