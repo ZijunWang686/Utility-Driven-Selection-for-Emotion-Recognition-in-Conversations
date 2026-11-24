@@ -16,13 +16,7 @@
 | Qwen3-8B A1 固定池化 LoRA | T + 连续音视频特征 | **70.46** | 68.59 | 52.78 |
 | Qwen2.5-Omni-7B LoRA | T+A+V（原始音视频） | 68.05 | 68.61 | **56.66** |
 
-在普通共享模型的四种输入组合中，仅输入 T 时三项整体指标均最高，Weighted-F1 为 69.21，比 T+V 高 0.10 个百分点。四组合及逐类结果见[附录 B](#plain-test)。
-
-Omni 的六次 Dev 评估和检查点选择见[附录 C](#omni-checkpoints)。类别加权共享多模态 LoRA（固定主教师）的 Test 结果见[附录 B 的类别加权 Test 小节](#appendix-a-weighted-test)。
-
-纯文本 LoRA、A1 与 Omni 均完成全部 2,610 条 Test 推理，无效预测均为 0。
-
-纯文本 LoRA 在 Test 上的 Accuracy / Weighted-F1 / Macro-F1 为 **69.16 / 68.37 / 54.37**，相比 Dev 的 70.60 / 69.66 / 57.61，分别下降 **1.45 / 1.29 / 3.24 个百分点**（按未四舍五入指标计算）。逐类别 F1 中，anger 和 sadness 分别下降 9.91 和 8.68 个百分点，fear 提高 6.17 个百分点；neutral、joy 相对接近。整体表现略降，少数类别的差异更明显。
+Omni 的六次 Dev 评估和检查点选择见[附录 C](#omni-checkpoints)。类别加权共享多模态 LoRA（固定主教师）的 Test 结果见[附录 B 的类别加权 Test 小节](#appendix-a-weighted-test)。在普通共享模型的四种输入组合中，仅输入 T 时三项整体指标均最高，Weighted-F1 为 69.21，比 T+V 高 0.10 个百分点。四组合及逐类结果见[附录 B](#plain-test)。
 
 ### 逐类别 Precision / Recall / F1
 
