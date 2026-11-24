@@ -4,9 +4,8 @@
 
 - 主结果：MELD Test，共 2,610 条；更新日期：2026-11-24。
 - 指标：Accuracy、Weighted-F1（主指标）、Macro-F1，均以百分比表示。
-- T 为当前话语及历史对话等文本输入；共享多模态 Qwen3-8B 的 A、V 为音频、视频生成的文字描述；A1 使用 WavLM 和 CLIP 的连续音视频特征；Qwen2.5-Omni-7B 直接接收音频和视频。
+- T 为当前话语及历史对话等文本输入；共享多模态 Qwen3-8B 的 A、V 为音频、视频生成的文字描述；A1 使用 WavLM-Large 和 CLIP-ViT-L/14 的连续音视频特征；Qwen2.5-Omni-7B 直接接收音频和视频。
 - 推理使用七标签约束贪心解码；Dev 用于选择检查点，Test 用于评测已固定的模型。
-- Dev、OOF 及历史诊断完整保留在附录。附录中的“Test 尚未评估”等文字为当时状态。
 
 ## 2. 核心结果（Test）
 
@@ -16,9 +15,9 @@
 | Qwen3-8B A1 固定池化 LoRA | T + 连续音视频特征 | **70.46** | 68.59 | 52.78 |
 | Qwen2.5-Omni-7B LoRA | T+A+V（原始音视频） | 68.05 | 68.61 | **56.66** |
 
-Omni 的六次 Dev 评估和检查点选择见[附录 C](#omni-checkpoints)。类别加权共享多模态 LoRA（固定主教师）的 Test 结果见[附录 B 的类别加权 Test 小节](#appendix-a-weighted-test)。在普通共享模型的四种输入组合中，仅输入 T 时三项整体指标均最高，Weighted-F1 为 69.21，比 T+V 高 0.10 个百分点。四组合及逐类结果见[附录 B](#plain-test)。
+Omni 的六次 Dev 评估和检查点选择见[附录 C](#omni-checkpoints)。
 
-### 逐类别 Precision / Recall / F1
+### 3. 逐类别 Precision / Recall / F1
 
 各模型单元格依次为 Precision / Recall / F1（百分比）。
 
@@ -32,51 +31,42 @@ Omni 的六次 Dev 评估和检查点选择见[附录 C](#omni-checkpoints)。�
 | disgust | 68 | 38.46 / 29.41 / 33.33 | 57.14 / 17.65 / 26.97 | 36.89 / 55.88 / 44.44 |
 | anger | 345 | 62.19 / 51.01 / 56.05 | 59.22 / 61.45 / 60.31 | 60.98 / 57.97 / 59.44 |
 
-类别加权共享多模态 LoRA（固定主教师）的逐类别结果见[附录 B 的类别加权 Test 小节](#appendix-a-weighted-test)。
 
-### 连续音视频实验 A1：固定池化
+### 实验分组与进度总览
 
-A1 从原始 Qwen3-8B 和新初始化的 LoRA 开始训练，使用同一份离线 WavLM-Large 音频特征和 CLIP-ViT-L/14 视频局部特征。音频按有效长度自适应平均池化为 8 个 token，视频沿有效帧维度平均得到 16 个 token；两路分别经过 MLP Projector 后接入 user 消息。A1 不使用 Q-Former、辅助情感损失或门控。
+| 实验 | 状态 | 音视频压缩方式（输出 8+16 tokens） | 辅助情感 Loss | 门控机制（Projector 后） | 可训练参数量 | 最佳 Dev W-F1 | Test (Acc / W-F1 / M-F1) |
+| :--- | :--- | :--- | :--- | :--- | :--- | ---: | :--- |
+| **A1** | ✅ 已完成 | 音频 `AdaptiveAvgPool1d(8)`；视频沿有效帧平均得 16 tokens | 无 | 无 | 57.29M（Proj 41.96M + LoRA 15.34M） | **68.05** (`ckpt-1250`) | 70.46 / **68.59** / 52.78 |
+| **A2** | 🔄 训练中 | 双路独立 2 层 Q-Former（Audio 8 / Video 16 Query + 正弦时间编码） | 无 | 无 | 124.51M（Comp+Proj 109.17M + LoRA 15.34M） | 待更新 | 待更新 |
+| **B** | ⏳ 计划中 | 同 A2 | 音/视频独立 `Linear(1024,7)` 标准 CE，权重各 0.1（仅有效模态） | 无 | 待记录 | — | — |
+| **C-static** | ⏳ 计划中 | 同 A2 | 同 B | 音/视频各 1 个全局可学习标量（初值 -2，Sigmoid） | 待记录 | — | — |
+| **C-dynamic** | ⏳ 计划中 | 同 A2 | 同 B | 用户文本 Emb 均值 + Q-Former 均值拼接 → `5120→256→1→Sigmoid` MLP（末层 W=0, b=-2） | 待记录 | — | — |
 
-训练采用 BF16、seed 42、最多 3 个 epoch、有效 batch size 16；LoRA rank 16、alpha 32、dropout 0.05，目标模块为 `q_proj`、`k_proj`、`v_proj`、`o_proj`。Projector 学习率为 `1e-4`，LoRA 学习率为 `5e-5`，使用 AdamW、5% warmup、cosine 调度和 1.0 梯度裁剪。可训练参数共 57,294,848，其中 Projector 41,959,424，LoRA 15,335,424。
+### 共享预处理与训练参数
 
-按 Dev Weighted-F1 选择最佳检查点，结果如下：
+| 类别 | 配置项 | 具体设置 |
+| :--- | :--- | :--- |
+| **离线特征** | 音频（WavLM-Large 冻结） | 16 kHz 单声道，≤15s，FP16 缓存最后层序列 `[Ta, 1024]` |
+| | 视频（CLIP-ViT-L/14 冻结） | 224×224，约 2 fps 均匀采样 4–8 帧（不足不重复填充）；去 CLS 后 16×16 → 4×4 AvgPool，FP16 缓存 `[N, 16, 1024]` 及帧索引/时间戳 |
+| **模型结构** | Q-Former（A2/B/C） | 双路独立随机初始化，2 层，hidden 1024，8 heads，FFN 4096，dropout 0.1（Self-Attn + Cross-Attn + FFN）；视频同帧 16 patch 共享时间编码 |
+| | Projector（全实验） | 音视频各自独立：`Linear(1024,4096) → GELU → Linear(4096,4096)` |
+| | LoRA（Qwen3-8B） | rank 16，alpha 32，dropout 0.05，target：`q_proj, k_proj, v_proj, o_proj`（15,335,424 参数） |
+| **接入与解码** | 多模态拼接 | 按 `音频(8) → 视频(16) → 原有用户文本` 顺序在 user 消息内通过 `inputs_embeds` 接入；缺失模态零占位、输出清零并屏蔽 attention mask |
+| | 序列与推理 | 最大长度 1024（预留 24 多模态 + 16 生成），最多 12 条历史；Qwen3 non-thinking 模板，七标签约束贪心解码；仅对答案及 EOS 计算标准 CE Loss |
+| **训练超参** | 精度与批次 | BF16，seed 42，最多 3 epochs；单卡 batch 1 × 梯度累积 16（有效 BS=16），开启 gradient checkpointing |
+| | 优化器与调度 | AdamW（weight decay 0.01），5% warmup，cosine 调度，grad clip 1.0；学习率：新增模块 `1e-4`，LoRA `5e-5` |
+| | 选点策略 | 每轮评估完整 Dev，按 Dev Weighted-F1 选最佳 checkpoint 测 Test |
 
-| Epoch | Checkpoint | Dev Weighted-F1 |
-| ---: | --- | ---: |
-| 1 | `checkpoint-625` | 66.45 |
-| 2 | `checkpoint-1250` | **68.05** |
-| 3 | `checkpoint-1875` | 68.03 |
+### 实验 A1 检查点记录
 
-选中的 `checkpoint-1250` 在 Dev 上的 Accuracy / Weighted-F1 / Macro-F1 为 **69.61 / 68.05 / 55.12**；在 Test 上为 **70.46 / 68.59 / 52.78**。Test Weighted-F1 相对纯文本 LoRA 高 0.22 个百分点，Macro-F1 低 1.59 个百分点。Neutral Recall 从 84.63 升至 90.45，而 Precision 从 77.65 降至 74.74；Anger F1 从 56.05 升至 60.31，Sadness 和 Disgust F1 分别从 46.93、33.33 降至 40.55、26.97。这是单 seed 的描述性比较，尚不能判断差异的稳定性。
+| Epoch | Checkpoint | Dev Weighted-F1 | 备注 |
+| ---: | :--- | ---: | :--- |
+| 1 | `checkpoint-625` | 66.45 | — |
+| 2 | `checkpoint-1250` | **68.05** | 选中用于 Test（Acc 70.46 / W-F1 68.59 / Macro-F1 52.78） |
+| 3 | `checkpoint-1875` | 68.03 | — |
 
-Train 与 Dev 各有一条音视频同时不可用的样本，分别为 `train/dia125_utt3`（原始文件损坏）和 `dev/dia110_utt7`（原始文件缺失）；二者均保留并按缺失模态策略处理，Test 无缺失模态。缓存覆盖 Train / Dev / Test 全部 9,989 / 1,109 / 2,610 条样本，通过维度、完整性和 NaN / Inf 检查。
 
-服务器结果目录为 `/root/rivermind-data/multimodal_meld/runs/a1/`：`checkpoint_results.json` 和 `best.json` 保存 Dev 选点，`test/metrics.json`、`test/per_class.csv`、`test/confusion_matrix.csv` 和 `test/predictions.jsonl` 保存 Test 指标与逐样本预测；`train_log.jsonl` 保存训练 Loss 与学习率。为节省空间，第 1、3 轮非最佳 checkpoint 的权重已删除，其 Dev 评估结果保留在 `dev_archive/`；最佳 `checkpoint-1250` 权重完整保留。
-
-### 连续音视频实验配置与进度
-
-以下记录本阶段 A1、A2 的实际工程配置；B、C 为后续计划，尚未开始。A1、A2 使用相同的数据划分、共享缓存、随机种子、训练预算、LoRA 和评估规则，各自从原始 Qwen3-8B 及新初始化的 LoRA 开始，不继承其他实验的训练权重。
-
-| 项目 | A1：固定池化 | A2：双路 Q-Former |
-| --- | --- | --- |
-| 状态（2026-11-24 核对） | 已完成训练和 Test | 正在训练；尚无最终 Test 结果 |
-| 输入 | 文本、对话历史及连续音视频特征 | 同 A1 |
-| 音频压缩 | 有效序列自适应平均池化至 8 个 token | 独立 Query 压缩器，8 个可学习 Query |
-| 视频压缩 | 沿有效帧维度平均，得到 16 个空间 token | 独立 Query 压缩器，16 个可学习 Query |
-| 音视频 Projector | 各自独立，`Linear(1024,4096) → GELU → Linear(4096,4096)` | 与 A1 相同 |
-| 辅助情感 Loss / Gate | 均无 | 均无 |
-| 可训练参数 | 57,294,848；其中 Projector 41,959,424，LoRA 15,335,424 | 124,506,112；其中压缩器与 Projector 109,170,688，LoRA 15,335,424 |
-
-**共享音视频预处理：**WavLM-Large 和 CLIP-ViT-L/14 冻结，使用离线 FP16 特征缓存。音频为 16 kHz 单声道、最多 15 秒，保留最后层时间序列 `[Ta, 1024]`；视频按约 2 fps 在完整视频范围均匀采样，通常 4–8 帧，原始有效帧不足 4 帧时不重复填充。CLIP 使用 224×224 图像，去除 CLS 后将每帧 16×16 patch 网格固定平均池化为 16 个 token，缓存保留 `[帧数, 16, 1024]`、帧索引和时间戳。两个实验读取完全相同的缓存。
-
-**A2 压缩器：**音频和视频各使用独立、随机初始化的 Q-Former-style Query Transformer，每路 2 层，hidden size 1024、8 个 attention heads、FFN hidden size 4096、dropout 0.1；每层包含 Query self-attention、cross-attention、FFN、残差和 LayerNorm。固定正弦时间位置编码分别加到音频时间步和视频帧；视频同帧的 16 个 patch 共享时间编码，再展平送入 Q-Former。
-
-**共享训练与评估：**BF16，seed 42，最多 3 epochs；单卡 batch size 1、梯度累积 16，有效 batch size 16；AdamW，weight decay 0.01，warmup 5%，cosine 学习率调度，梯度裁剪 1.0，并启用 gradient checkpointing。新增模块学习率 `1e-4`，LoRA 学习率 `5e-5`；LoRA rank 16、alpha 32、dropout 0.05，目标模块为 `q_proj`、`k_proj`、`v_proj`、`o_proj`。最大序列长度 1024，预留 24 个音视频 token 和 16 个答案生成 token；沿用最多 12 条历史、Qwen3 non-thinking Chat Template 和七标签约束贪心解码。音频 → 视频 → 原有用户文本的顺序在 user 消息内部通过 `inputs_embeds` 接入；主任务仅对情绪答案及 EOS 计算标准语言模型 Loss。缺失模态保留零占位，输出 token 清零并屏蔽对应 attention mask。每轮用 Dev Weighted-F1 选点，再使用所选 checkpoint 评估 Test。
-
-**后续实验计划（尚未实施）：**B 在 A2 结构上增加音频和视频各自的 `Linear(1024, 7)` 七分类辅助头，标准交叉熵权重各为 0.1，仅对对应模态有效的样本计算。C-static 和 C-dynamic 在 B 的结构上分别增加静态全局门控和文本引导的样本级动态门控：静态门控各使用一个初值为 -2 的可学习标量；动态门控使用用户文本的 embedding masked mean 与对应 Q-Former 输出均值拼接，经独立的 `5120 → 256 → 1 → Sigmoid` MLP 产生权重，末层权重置零、bias 置为 -2。门控作用于 Projector 之后，不增加额外门控 Loss。B、C 各组均独立初始化和训练；这些是计划配置，不是已完成的结果。
-
-配置文件分别为 [`a1_pooling.json`](multimodal_meld/configs/a1_pooling.json) 和 [`a2_qformer.json`](multimodal_meld/configs/a2_qformer.json)。服务器共享缓存及校验报告位于 `/root/rivermind-data/multimodal_meld/feature_cache/` 和 `full_run/validation.json`；A2 的运行目录为 `/root/rivermind-data/multimodal_meld/runs/a2/`。
+类别加权共享多模态 LoRA（固定主教师）的逐类别结果见[附录 B 的类别加权 Test 小节](#appendix-a-weighted-test)。类别加权共享多模态 LoRA（固定主教师）的 Test 结果见[附录 B 的类别加权 Test 小节](#appendix-a-weighted-test)。在普通共享模型的四种输入组合中，仅输入 T 时三项整体指标均最高，Weighted-F1 为 69.21，比 T+V 高 0.10 个百分点。四组合及逐类结果见[附录 B](#plain-test)。
 
 ## 附录 A：Dev 结果摘要与研究进展（历史留档）
 
