@@ -52,18 +52,10 @@ Omni 的六次 Dev 评估和检查点选择见[附录 C](#omni-checkpoints)。
 ### 2. 核心模块原理与实现说明
 
 #### （1）任务导向的音/视频独立情感辅助监督（实验 B）
-* **提出动机**：在基于大语言模型的多模态情感识别中，文本模态通常占据绝对主导地位（Modality Dominance）。如果仅依赖 LLM 末端的语言建模损失进行端到端反向传播，梯度在穿过深层 Transformer 后会显著衰减，导致随机初始化的音视频 Q-Former 压缩器难以在有限样本上充分收敛，甚至退化为提取背景噪声或说话人身份等情感无关特征。
-* **实现方式**：在音频与视频 Q-Former 的输出端（Projector 之前），分别对压缩后的 Query 序列做均值池化，各自接入一个轻量的独立线性分类头（`Linear(1024, 7)`），直接利用 MELD 的七类情绪标签计算标准交叉熵辅助损失：
-  $$\mathcal{L}_{\text{total}} = \mathcal{L}_{\text{LLM}} + \lambda_a \mathcal{L}_{\text{aux}}^{a} + \lambda_v \mathcal{L}_{\text{aux}}^{v}$$
-  其中 $\lambda_a = \lambda_v = 0.1$，且仅对对应模态有效的样本计算平均损失（缺失模态自动跳过）。该辅助分支仅在训练阶段为压缩器提供显式的任务导向梯度，强迫 Q-Former 主动筛选具有情绪判别性的声学与视觉线索；推理阶段直接移除，不增加任何额外推理开销。
+
 
 #### （2）面向 RMSNorm 的文本引导动态门控插值（实验 C）
-* **提出动机**：不同情绪样本对多模态信息的依赖程度存在显著差异——高唤醒情绪（如 Anger、Disgust、Surprise）高度依赖语气和表情补充，而占比较高的 Neutral 样本则极易受到背景笑声或无关画面的负迁移干扰。传统的输入端乘法软门控（$\widetilde{X}_m = g_m X_m$）试图通过缩小幅值来抑制噪声模态，但现代大语言模型（如 Qwen3）在 Transformer 层入口及注意力内部广泛采用了 RMSNorm。由于 RMSNorm 对正数缩放具有近似尺度不变性（$\operatorname{RMSNorm}(gx) \approx \operatorname{RMSNorm}(x)$），单纯缩小特征幅值在进入 LLM 后会被归一化操作大幅抵消，导致传统乘法门控难以真正屏蔽无效模态。
-* **实现方式**：为规避 RMSNorm 的尺度不变性，我们将乘法缩放改进为**基于可学习空模态向量的门控插值（Modality Interpolation Gating）**。具体而言，为音频和视频分别引入一个独立的可学习空模态占位向量 $e_m^{\text{null}} \in \mathbb{R}^{1 \times 4096}$（按 Qwen3 词嵌入分布尺度初始化，严禁零初始化），并在 Projector 输出之后执行加权插值：
-  $$\widetilde{X}_m = g_m X_m + (1 - g_m) e_m^{\text{null}}, \quad m \in \{a, v\}$$
-  * **动态门控（C-dynamic）**：复用 Qwen3 词嵌入层对用户输入文本（排除模板特殊符与答案）做 Masked Mean Pooling 得到文本语义表示 $h_{\text{text}}$，与对应模态 Q-Former 的均值表示 $z_m$ 拼接后，经轻量级 MLP 与 Sigmoid 生成样本级门控权重 $g_m \in (0, 1)$（末层权重置零、偏置初始化为 $-2$，使训练初期偏向保守引入）。
-  * **静态对照（C-static）**：采用跨样本共享的全局可学习标量 $g_m = \sigma(\alpha_m)$（初值同样为 $-2$），用于剥离“全局模态缩放”与“样本自适应调节”的独立贡献。
-  * **核心优势**：插值机制通过改变特征**方向**而非仅改变**幅值**来调节模态贡献。当 $g_m \to 0$ 时，带噪的音视频特征被平滑替换为代表“无有效多模态线索”的 $e_m^{\text{null}}$，即使经过 RMSNorm 依然能向 LLM 稳定传递忽略信号，从而在不修改 LLM 底层 Attention 与 KV Cache 实现的前提下，实现样本级的按需去噪融合。
+
 
 ### 共享预处理与训练参数
 
