@@ -57,7 +57,7 @@ Omni 的六次 Dev 评估和检查点选择见[附录 C](#omni-checkpoints)。
 #### （2）面向 RMSNorm 的文本引导动态门控插值（实验 C）
 
 
-### 共享预处理与训练参数
+### 预处理与训练参数
 
 | 类别 | 配置项 | 具体设置 |
 | :--- | :--- | :--- |
@@ -82,18 +82,13 @@ Omni 的六次 Dev 评估和检查点选择见[附录 C](#omni-checkpoints)。
 
 ### 实验 A2 检查点记录
 
-A2 从原始 Qwen3-8B 重新初始化 LoRA 和双路 Q-Former，独立训练，未加载 A1 的权重。A1、A2 使用相同的特征缓存、数据划分、训练预算、LoRA 配置和评估方式；两路均输出 8 + 16 个多模态 token。A2 不使用辅助情感 Loss 或门控。
+A2 从原始 Qwen3-8B 重新初始化 LoRA 和双路 Q-Former，独立训练，未加载 A1 的权重。A1、A2 使用相同的特征缓存、数据划分、训练预算、LoRA 配置和评估方式；两路均输出 8 + 16 个多模态 token。
 
 | Epoch | Checkpoint | Dev Accuracy | Dev Weighted-F1 | Dev Macro-F1 | 备注 |
 | ---: | :--- | ---: | ---: | ---: | :--- |
 | 1 | `checkpoint-625` | 68.26 | 65.82 | 51.41 | — |
 | 2 | `checkpoint-1250` | 69.61 | 68.08 | 55.17 | — |
 | 3 | `checkpoint-1875` | 70.24 | **68.81** | 55.03 | 按 Dev Weighted-F1 选中用于 Test |
-
-选中的 `checkpoint-1875` 在 Test 上的 Accuracy / Weighted-F1 / Macro-F1 为 **69.77 / 68.24 / 53.20**。相对 A1，Test Sadness F1 从 40.55 升至 44.16（+3.61），Disgust F1 从 26.97 升至 27.37（+0.40），Macro-F1 从 52.78 升至 53.20（+0.42）；Weighted-F1 从 68.59 降至 68.24（−0.35），尚未达到 69。两组为单 seed 结果，差异的稳定性有待验证。
-
-A2 的 1,875 个训练优化步均有有限的 Loss 和梯度记录；完整 Dev / Test 分别为 1,109 / 2,610 条，Test 无非法预测。服务器结果目录为 `/root/rivermind-data/multimodal_meld/runs/a2/`：`checkpoint_results.json`、`best.json` 保存 Dev 选点；`test/metrics.json`、`test/per_class.csv`、`test/confusion_matrix.csv`、`test/predictions.jsonl` 保存 Test 指标及逐样本结果；`train_log.jsonl` 保存训练 Loss 和学习率。
-
 
 类别加权共享多模态 LoRA（固定主教师）的逐类别结果见[附录 B 的类别加权 Test 小节](#appendix-a-weighted-test)。类别加权共享多模态 LoRA（固定主教师）的 Test 结果见[附录 B 的类别加权 Test 小节](#appendix-a-weighted-test)。在普通共享模型的四种输入组合中，仅输入 T 时三项整体指标均最高，Weighted-F1 为 69.21，比 T+V 高 0.10 个百分点。四组合及逐类结果见[附录 B](#plain-test)。
 
