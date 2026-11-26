@@ -25,7 +25,7 @@ Omni 的六次 Dev 评估和检查点选择见[附录 C](#omni-checkpoints)。
 
 数值为 Test F1（%）；完整 Precision / Recall / F1 见[逐类别完整指标](RESULT_per_class_full.md)。
 
-| 情绪 | 样本数 | 纯文本 | A1 | A2 | B | C-static | C-dynamic | Omni |
+| 情绪 | 样本数 | 纯文本 | A1 固定池化| A2 Q-Former| B 情感辅助监督 | C-static | C-dynamic | Omni |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | neutral | 1256 | 80.99 | 81.84 | 80.94 | 81.34 | 81.54 | 81.55 | 79.33 |
 | surprise | 281 | 59.43 | 60.63 | 59.16 | 60.80 | 61.07 | 59.16 | 62.39 |
