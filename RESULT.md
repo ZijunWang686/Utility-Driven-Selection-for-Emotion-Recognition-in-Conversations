@@ -12,10 +12,11 @@
 | 模型 | 输入 | Accuracy | Weighted-F1 | Macro-F1 |
 | --- | --- | ---: | ---: | ---: |
 | Qwen3-8B 纯文本 LoRA | T | 69.16 | 68.37 | 54.37 |
+| Qwen3-8B 固定描述 LoRA | T+A+V（音视频文字描述） | 69.89 | **69.24** | 55.16 |
 | Qwen3-8B A1 固定池化 LoRA | T + 连续音视频特征 | 70.46 | 68.59 | 52.78 |
 | Qwen3-8B A2 双路 Q-Former LoRA | T + 连续音视频特征 | 69.77 | 68.24 | 53.20 |
 | Qwen3-8B B 情感辅助监督 LoRA | T + 连续音视频特征 | 70.23 | 68.66 | 54.24 |
-| Qwen3-8B C-static 静态门控插值 LoRA | T + 连续音视频特征 | **70.50** | **69.00** | 53.77 |
+| Qwen3-8B C-static 静态门控插值 LoRA | T + 连续音视频特征 | **70.50** | 69.00 | 53.77 |
 | Qwen3-8B C-dynamic 动态门控插值 LoRA | T + 连续音视频特征 | 70.11 | 68.50 | 53.59 |
 | Qwen2.5-Omni-7B LoRA | T+A+V（原始音视频） | 68.05 | 68.61 | **56.66** |
 
@@ -556,3 +557,28 @@ Train 的错误为损坏片段 `dia125_utt3`；Test 的 `dia38_utt4` 和 `dia220
 Test 已完成全部 2,610 条，无效预测 0 条。Accuracy 为 **68.05**，Weighted-F1 为 **68.61**，Macro-F1 为 **56.66**。第 349 条长视频触发显存溢出后，保留前 348 条预测，从该样本使用同一检查点续跑，音视频按编码器原有注意力窗口分组计算。
 
 服务器结果目录为 `meld_experiment/omni_qwen3_protocol/runs/weighted_ep3/`，其中 `checkpoint_results.json` 汇总六次 Dev 验证，`best.json` 记录检查点选择，`test/metrics.json` 保存完整精度指标与混淆矩阵，`test/predictions.jsonl` 保存逐样本结果。
+
+
+### Qwen3-8B 固定 T+A+V 描述基线（2026-11-26）
+
+使用现有音频和视频文字描述，普通损失，训练全程固定 T+A+V。BF16 LoRA，3 轮，训练集 9,989 条；每轮保存检查点，训练结束后在完整 Dev（1,109 条）上评估，按 Weighted-F1 选择最佳检查点。Test 共 2,610 条，无效预测 0 条。
+
+| Epoch | Checkpoint | Dev Accuracy | Dev Weighted-F1 | Dev Macro-F1 |
+| ---: | ---: | ---: | ---: | ---: |
+| 1 | 625 | 67.99 | 67.32 | 53.13 |
+| 2 | 1250 | 69.34 | 68.52 | 57.71 |
+| 3 | **1875** | **69.61** | **68.55** | **57.15** |
+
+选用 checkpoint-1875 后，Test Accuracy **69.89**，Weighted-F1 **69.24**，Macro-F1 **55.16**。各类结果如下，数值均为百分比。
+
+| 情绪 | 样本数 | Precision | Recall | F1 |
+| --- | ---: | ---: | ---: | ---: |
+| neutral | 1256 | 78.61 | 84.55 | 81.47 |
+| surprise | 281 | 56.17 | 64.77 | 60.17 |
+| fear | 50 | 40.00 | 32.00 | 35.56 |
+| sadness | 208 | 57.43 | 40.87 | 47.75 |
+| joy | 402 | 66.92 | 65.92 | 66.42 |
+| disgust | 68 | 39.62 | 30.88 | 34.71 |
+| anger | 345 | 64.77 | 55.94 | 60.03 |
+
+服务器结果目录为 `meld_experiment/runs/fixed_descriptions_v1/`，其中 `checkpoint_results.json` 记录 Dev 选模结果，`test/metrics.json` 记录完整指标与混淆矩阵。
