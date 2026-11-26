@@ -18,7 +18,7 @@
 | Qwen3-8B C-static 静态门控插值 LoRA | T + 连续音视频特征 | **70.50** | **69.00** | 53.77 |
 | Qwen2.5-Omni-7B LoRA | T+A+V（原始音视频） | 68.05 | 68.61 | **56.66** |
 
-Omni 的六次 Dev 评估和检查点选择见[附录 C](#omni-checkpoints)。
+Omni 的 Dev 评估和检查点选择见[附录 C](#omni-checkpoints)。
 
 ### 3. 逐类别 Precision / Recall / F1
 
